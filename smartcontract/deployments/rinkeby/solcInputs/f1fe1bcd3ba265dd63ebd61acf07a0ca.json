@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/Whitelist.sol": {
+      "content": "//SPDX-License-Identifier: Unlicense\r\npragma solidity ^0.8.0;\r\n\r\nerror AlreadyWhitelisted();\r\nerror MaxAddressesWhitelisted();\r\n\r\ncontract Whitelist {\r\n    uint8 private immutable maxWhitelistedAddresses;\r\n    mapping(address => bool) public whitelistedAddresses;\r\n    uint8 public numAddressesWhitelisted;\r\n\r\n    constructor(uint8 _maxWhitelistedAddresses) {\r\n        maxWhitelistedAddresses = _maxWhitelistedAddresses;\r\n    }\r\n\r\n    modifier notWhitelisted() {\r\n        if (whitelistedAddresses[msg.sender]) {\r\n            revert AlreadyWhitelisted();\r\n        }\r\n        _;\r\n    }\r\n\r\n    modifier whitelistLimitNotReached() {\r\n        if (numAddressesWhitelisted >= maxWhitelistedAddresses) {\r\n            revert MaxAddressesWhitelisted();\r\n        }\r\n        _;\r\n    }\r\n\r\n    function addAddressToWhitelist()\r\n        public\r\n        notWhitelisted\r\n        whitelistLimitNotReached\r\n    {\r\n        whitelistedAddresses[msg.sender] = true;\r\n        numAddressesWhitelisted += 1;\r\n    }\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
