@@ -9,9 +9,7 @@ contract Whitelist {
     mapping(address => bool) public whitelistedAddresses;
     uint8 public numAddressesWhitelisted;
 
-    constructor(uint8 _maxWhitelistedAddresses) {
-        maxWhitelistedAddresses = _maxWhitelistedAddresses;
-    }
+    event AddressWhitelisted(address indexed whitelistedAddress);
 
     modifier notWhitelisted() {
         if (whitelistedAddresses[msg.sender]) {
@@ -27,6 +25,10 @@ contract Whitelist {
         _;
     }
 
+    constructor(uint8 _maxWhitelistedAddresses) {
+        maxWhitelistedAddresses = _maxWhitelistedAddresses;
+    }
+
     function addAddressToWhitelist()
         public
         notWhitelisted
@@ -34,5 +36,6 @@ contract Whitelist {
     {
         whitelistedAddresses[msg.sender] = true;
         numAddressesWhitelisted += 1;
+        emit AddressWhitelisted(msg.sender);
     }
 }
