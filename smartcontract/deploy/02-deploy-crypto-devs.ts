@@ -29,7 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log("----------------------------------------------");
       log("CONTRACT VERIFICATION");
       log(
-        `npx hardhat verify --network ${network.name} ${deployedContract.address} ${args[0]}`
+        `npx hardhat verify --network ${network.name} ${deployedContract.address} ${args[0]} ${args[1]}`
       );
       log("----------------------------------------------");
     }
