@@ -5,6 +5,14 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IWhitelist.sol";
 
+error ContractPaused();
+error PresaleNotRunning();
+error NotWhitelisted();
+error MaxTokensReached();
+error InsufficientFunds();
+error PresaleRunning();
+error PresaleNotStarted();
+
 contract CryptoDevs is ERC721Enumerable, Ownable {
     uint256 private constant TOKEN_PRICE = 0.01 ether;
     uint256 private constant MAX_TOKENS = 20;
@@ -17,7 +25,9 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
     bool public presaleStarted;
 
     modifier onlyWhenNotPaused() {
-        require(!_paused, "Contract currently paused");
+        if (_paused) {
+            revert ContractPaused();
+        }
         _;
     }
 
@@ -38,27 +48,35 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
     }
 
     function presaleMint() public payable onlyWhenNotPaused {
-        require(
-            presaleStarted && block.timestamp < presaleEnded,
-            "Presale is not running"
-        );
-        require(
-            whitelist.whitelistedAddresses(msg.sender),
-            "You are not whitelisted"
-        );
-        require(tokenIds < MAX_TOKENS, "Exceeded maximum Crypto Devs supply");
-        require(msg.value >= TOKEN_PRICE, "Ether sent is not correct");
+        if (presaleStarted || block.timestamp >= presaleEnded) {
+            revert PresaleNotRunning();
+        }
+        if (!whitelist.whitelistedAddresses(msg.sender)) {
+            revert NotWhitelisted();
+        }
+        if (tokenIds >= MAX_TOKENS) {
+            revert MaxTokensReached();
+        }
+        if (msg.value < TOKEN_PRICE) {
+            revert InsufficientFunds();
+        }
         tokenIds += 1;
         _safeMint(msg.sender, tokenIds);
     }
 
     function mint() public payable onlyWhenNotPaused {
-        require(
-            presaleStarted && block.timestamp >= presaleEnded,
-            "Presale has not ended yet"
-        );
-        require(tokenIds < MAX_TOKENS, "Exceed maximum Crypto Devs supply");
-        require(msg.value >= TOKEN_PRICE, "Ether sent is not correct");
+        if (!presaleStarted) {
+            revert PresaleNotStarted();
+        }
+        if (block.timestamp < presaleEnded) {
+            revert PresaleRunning();
+        }
+        if (tokenIds >= MAX_TOKENS) {
+            revert MaxTokensReached();
+        }
+        if (msg.value < TOKEN_PRICE) {
+            revert InsufficientFunds();
+        }
         tokenIds += 1;
         _safeMint(msg.sender, tokenIds);
     }
