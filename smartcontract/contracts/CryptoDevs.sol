@@ -14,10 +14,10 @@ error PresaleRunning();
 error PresaleNotStarted();
 
 contract CryptoDevs is ERC721Enumerable, Ownable {
-    uint256 private constant TOKEN_PRICE = 0.01 ether;
-    uint256 private constant MAX_TOKENS = 20;
     IWhitelist whitelist;
 
+    uint256 public constant tokenPrice = 0.01 ether;
+    uint256 public constant maxTokens = 20;
     string public _baseTokenURI;
     uint256 public tokenIds;
     uint256 public presaleEnded;
@@ -54,10 +54,10 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
         if (!whitelist.whitelistedAddresses(msg.sender)) {
             revert NotWhitelisted();
         }
-        if (tokenIds >= MAX_TOKENS) {
+        if (tokenIds >= maxTokens) {
             revert MaxTokensReached();
         }
-        if (msg.value < TOKEN_PRICE) {
+        if (msg.value < tokenPrice) {
             revert InsufficientFunds();
         }
         tokenIds += 1;
@@ -71,10 +71,10 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
         if (block.timestamp < presaleEnded) {
             revert PresaleRunning();
         }
-        if (tokenIds >= MAX_TOKENS) {
+        if (tokenIds >= maxTokens) {
             revert MaxTokensReached();
         }
-        if (msg.value < TOKEN_PRICE) {
+        if (msg.value < tokenPrice) {
             revert InsufficientFunds();
         }
         tokenIds += 1;
