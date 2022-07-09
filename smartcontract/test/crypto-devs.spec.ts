@@ -1,7 +1,10 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { deployments, ethers } from "hardhat";
 import { Whitelist, CryptoDevs } from "../typechain";
+import { getParsedBalance } from "./utils/CryptoDevs";
+import { CryptoDevsUtils } from "./utils/index";
 
 describe("Whitelist", function () {
   let whitelistContract: Whitelist,
@@ -20,16 +23,40 @@ describe("Whitelist", function () {
 
   describe("State variables", function () {
     it("Should have a token price of 0.01 ETH", async () => {
-       expect(ethers.utils.formatEther(await cryptoDevsContract.tokenPrice())).to.equal("0.01")
+      expect(
+        ethers.utils.formatEther(await cryptoDevsContract.tokenPrice())
+      ).to.equal("0.01");
     });
-    it("Should have a max token amount of 20");
+    it("Should have a max token amount of 20", async () => {
+      expect((await cryptoDevsContract.maxTokens()).toString()).to.equal("20");
+    });
   });
 
   describe("Special functions", function () {
-    it("Should be able to receive ETH when contract receives a transaction");
-    it(
-      "Should be able to receive ETH when contract receives a transaction with msg.data"
-    );
+    it("Should be able to receive ETH when contract receives a transaction", async () => {
+      expect(await getParsedBalance(cryptoDevsContract)).to.equal("0.0");
+
+      // Receive function running here
+      await deployer.sendTransaction({
+        to: cryptoDevsContract.address,
+        value: ethers.utils.parseEther("1"),
+      });
+
+      expect(await getParsedBalance(cryptoDevsContract)).to.equal("1.0");
+    });
+
+    it("Should be able to receive ETH when contract receives a transaction with msg.data", async () => {
+      expect(await getParsedBalance(cryptoDevsContract)).to.equal("0.0");
+
+      // Fallback function running here
+      await deployer.sendTransaction({
+        to: cryptoDevsContract.address,
+        value: ethers.utils.parseEther("1"),
+        data: ethers.utils.solidityPack(["string"], ["This is a test :P"]),
+      });
+
+      expect(await getParsedBalance(cryptoDevsContract)).to.equal("1.0");
+    });
   });
 
   describe("Presale minting", function () {
