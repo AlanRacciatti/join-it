@@ -19,7 +19,9 @@ describe("Whitelist", function () {
   });
 
   describe("State variables", function () {
-    it("Should have a token price of 0.01 ETH");
+    it("Should have a token price of 0.01 ETH", async () => {
+       expect(ethers.utils.formatEther(await cryptoDevsContract.tokenPrice())).to.equal("0.01")
+    });
     it("Should have a max token amount of 20");
   });
 
