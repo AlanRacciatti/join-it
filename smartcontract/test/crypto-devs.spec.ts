@@ -6,14 +6,15 @@ import { Whitelist, CryptoDevs } from "../typechain";
 import { getParsedBalance } from "./utils/CryptoDevs";
 import { CryptoDevsUtils } from "./utils/index";
 
-describe("Whitelist", function () {
+describe("Crypto Devs", function () {
   let whitelistContract: Whitelist,
     cryptoDevsContract: CryptoDevs,
     deployer: SignerWithAddress,
+    alice: SignerWithAddress,
     signers: SignerWithAddress[];
 
   beforeEach(async () => {
-    [deployer, ...signers] = await ethers.getSigners();
+    [deployer, alice, ...signers] = await ethers.getSigners();
 
     await deployments.fixture(["main"]);
 
@@ -60,8 +61,26 @@ describe("Whitelist", function () {
   });
 
   describe("Presale minting", function () {
-    it("Should be able to start presale");
-    it("Should only allow the owner to start presale");
+    it("Should be able to start presale", async () => {
+      expect(await cryptoDevsContract.presaleStarted()).to.equal(false);
+
+      await cryptoDevsContract.startPresale();
+
+      expect(await cryptoDevsContract.presaleStarted()).to.equal(true);
+    });
+
+    it("Should only allow the owner to start presale", async () => {
+      await expect(
+        cryptoDevsContract.connect(alice).startPresale()
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+
+      expect(await cryptoDevsContract.presaleStarted()).to.equal(false);
+
+      await cryptoDevsContract.startPresale();
+
+      expect(await cryptoDevsContract.presaleStarted()).to.equal(true);
+    });
+
     it("Should be able to presale mint an NFT");
     it("Should NOT allow presale minting if presale not started");
     it("Should NOT allow presale minting if sender is not whitelisted");
