@@ -48,7 +48,7 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
     }
 
     function presaleMint() public payable onlyWhenNotPaused {
-        if (presaleStarted || block.timestamp >= presaleEnded) {
+        if (!presaleStarted || block.timestamp >= presaleEnded) {
             revert PresaleNotRunning();
         }
         if (!whitelist.whitelistedAddresses(msg.sender)) {
