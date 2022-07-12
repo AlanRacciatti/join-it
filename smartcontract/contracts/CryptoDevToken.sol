@@ -5,6 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ICryptoDevs.sol";
 
+error InsufficientFunds();
+error TotalSupplyExceeded();
+error NotNftOwner();
+error AllTokensClaimed();
+error TransactionError();
+
 contract CryptoDevToken is ERC20, Ownable {
     uint256 public constant tokenPrice = 0.001 ether;
     uint256 public constant tokensPerNFT = 10 * 10**18;
@@ -24,14 +30,16 @@ contract CryptoDevToken is ERC20, Ownable {
 
     function mint(uint256 amount) public payable {
         uint256 _requiredAmount = tokenPrice * amount;
-        require(msg.value >= _requiredAmount, "Insufficient funds");
+
+        if (msg.value < _requiredAmount) {
+            revert InsufficientFunds();
+        }
 
         uint256 amountWithDecimals = amount * 10**18;
 
-        require(
-            (totalSupply() + amountWithDecimals) <= maxTotalSupply,
-            "Total supply exceeded"
-        );
+        if ((totalSupply() + amountWithDecimals) > maxTotalSupply) {
+            revert TotalSupplyExceeded();
+        }
 
         _mint(msg.sender, amountWithDecimals);
     }
@@ -39,7 +47,10 @@ contract CryptoDevToken is ERC20, Ownable {
     function claim() public {
         address sender = msg.sender;
         uint256 balance = CryptoDevsNFT.balanceOf(sender);
-        require(balance > 0, "You dont own Crypto Dev NFT's");
+
+        if (balance <= 0) {
+            revert NotNftOwner();
+        }
 
         uint256 amount = 0;
 
@@ -51,7 +62,10 @@ contract CryptoDevToken is ERC20, Ownable {
             }
         }
 
-        require(amount > 0, "You have claimed all the tokens");
+        if (amount <= 0) {
+            revert AllTokensClaimed();
+        }
+
         _mint(msg.sender, amount * tokensPerNFT);
     }
 
@@ -59,6 +73,8 @@ contract CryptoDevToken is ERC20, Ownable {
         address _owner = owner();
         uint256 amount = address(this).balance;
         (bool sent, ) = _owner.call{value: amount}("");
-        require(sent, "Failed to send Ether");
+        if (!sent) {
+            revert TransactionError();
+        }
     }
 }
