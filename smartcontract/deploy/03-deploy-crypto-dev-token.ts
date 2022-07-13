@@ -9,23 +9,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, log } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  const whitelistContract: Deployment = await deployments.get("Whitelist");
+  const cryptoDevsContact: Deployment = await deployments.get("CryptoDevs");
 
-  const BASE_URI = "https://go-api-rock.herokuapp.com/api/v1";
-  const CONTRACT_ADDRESS = whitelistContract.address;
+  const CRYPTO_DEVS_ADDRESS = cryptoDevsContact.address;
 
-  const args = [BASE_URI, CONTRACT_ADDRESS];
-  const parsedArgs = args.join(" ");
+  const args = [CRYPTO_DEVS_ADDRESS];
 
-  await deploy("CryptoDevs", {
+  await deploy("CryptoDevToken", {
     from: deployer,
     args,
     log: true,
   });
 
-  if (network.name === "rinkeby") {
-    const deployedContract: Deployment = await deployments.get("CryptoDevs");
+  const deployedContract: Deployment = await deployments.get("CryptoDevToken");
+  const parsedArgs = args.join(" ");
 
+  if (network.name === "rinkeby") {
     if (process.env.ETHERSCAN_API_KEY) {
       log("----------------------------------------------");
       log("CONTRACT VERIFICATION");

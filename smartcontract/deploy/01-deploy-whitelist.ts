@@ -12,6 +12,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const MAX_WHITELIST_SIZE = 10;
 
   const args = [MAX_WHITELIST_SIZE];
+  const parsedArgs = args.join(" ");
 
   await deploy("Whitelist", {
     from: deployer,
@@ -26,7 +27,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       log("----------------------------------------------");
       log("CONTRACT VERIFICATION");
       log(
-        `npx hardhat verify --network ${network.name} ${deployedContract.address} ${args[0]}`
+        `npx hardhat verify --network ${network.name} ${deployedContract.address} ${parsedArgs}`
       );
       log("----------------------------------------------");
     }
