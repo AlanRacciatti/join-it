@@ -24,9 +24,21 @@ describe("Crypto Dev Token", function () {
   });
 
   describe("State variables", function () {
-    it("Should have a token price of 0.001 ETH");
-    it("Should have 10 tokens to be sent by NFT");
-    it("Should have a max total supply of 10000 tokens");
+    it("Should have a token price of 0.001 ETH", async () => {
+      expect(
+        ethers.utils.formatEther(await cryptoDevTokenContract.tokenPrice())
+      ).to.equal("0.001");
+    });
+    it("Should have 10 tokens to be sent by NFT", async () => {
+      expect(
+        ethers.utils.formatEther(await cryptoDevTokenContract.tokensPerNFT())
+      ).to.equal("10.0");
+    });
+    it("Should have a max total supply of 10000 tokens", async () => {
+      expect(
+        ethers.utils.formatEther(await cryptoDevTokenContract.maxTotalSupply())
+      ).to.equal("10000.0");
+    });
   });
 
   describe("Special functions", function () {
