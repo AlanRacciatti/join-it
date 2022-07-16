@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { ContractReceipt, ContractTransaction } from "ethers";
+import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 import { deployments, ethers } from "hardhat";
 import { Whitelist, CryptoDevs, CryptoDevToken } from "../typechain";
 import { getParsedBalance } from "./utils/CryptoDevs";
@@ -45,7 +45,6 @@ describe("Crypto Dev Token", function () {
     it("Should be able to receive ETH when contract receives a transaction", async () => {
       expect(await getParsedBalance(cryptoDevTokenContract)).to.equal("0.0");
 
-      // Receive function running here
       await deployer.sendTransaction({
         to: cryptoDevTokenContract.address,
         value: ethers.utils.parseEther("1"),
@@ -57,7 +56,6 @@ describe("Crypto Dev Token", function () {
     it("Should be able to receive ETH when contract receives a transaction with msg.data", async () => {
       expect(await getParsedBalance(cryptoDevTokenContract)).to.equal("0.0");
 
-      // Fallback function running here
       await deployer.sendTransaction({
         to: cryptoDevTokenContract.address,
         value: ethers.utils.parseEther("1"),
@@ -69,9 +67,30 @@ describe("Crypto Dev Token", function () {
   });
 
   describe("Minting", function () {
-    it("Should be able to mint tokens", async () => {});
-    it("Should revert if it was not send enough ETH");
-    it("Should revert if mint exceed total supply");
+    it("Should be able to mint tokens", async () => {
+      const tokenPrice: BigNumber = await cryptoDevTokenContract.tokenPrice();
+      const tokensToMint: BigNumber = BigNumber.from(10);
+      const tokensPrice: BigNumber = tokenPrice.mul(tokensToMint);
+
+      await expect(() =>
+        cryptoDevTokenContract.connect(alice).mint(tokensToMint, {
+          value: tokensPrice,
+        })
+      ).to.changeTokenBalance(
+        cryptoDevTokenContract,
+        alice,
+        ethers.utils.parseEther(tokensToMint.toString())
+      );
+    });
+
+    it("Should revert if user did not send enough ETH", async () => {
+      const tokensToMint: BigNumber = BigNumber.from(10);
+      await expect(
+        cryptoDevTokenContract.mint(tokensToMint)
+      ).to.be.revertedWith("InsufficientFunds");
+    });
+
+    it("Should revert if mint exceed max total supply", async () => {});
   });
 
   describe("Claiming", function () {
