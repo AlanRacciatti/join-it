@@ -159,8 +159,33 @@ describe("Crypto Dev Token", function () {
     });
   });
 
-  describe("Withdraw", function () {
-    it("Should allow contract withdraw");
-    it("Should revert if withdrawer is not the contract owner");
+  describe.only("Withdraw", function () {
+    it("Should allow contract withdraw", async () => {
+      const tokenPrice: BigNumber = await cryptoDevTokenContract.tokenPrice();
+      const tokensToBuy: number = 10;
+      const ethSent: BigNumber = tokenPrice.mul(tokensToBuy);
+
+      await cryptoDevTokenContract.connect(alice).mint(tokensToBuy, {
+        value: ethSent,
+      });
+
+      await expect(() =>
+        cryptoDevTokenContract.withdraw()
+      ).to.changeEtherBalance(deployer, ethSent);
+    });
+
+    it("Should revert if withdrawer is not the contract owner", async () => {
+      const tokenPrice: BigNumber = await cryptoDevTokenContract.tokenPrice();
+      const tokensToBuy: number = 10;
+      const ethSent: BigNumber = tokenPrice.mul(tokensToBuy);
+
+      await cryptoDevTokenContract.connect(alice).mint(tokensToBuy, {
+        value: ethSent,
+      });
+
+      await expect(
+        cryptoDevTokenContract.connect(alice).withdraw()
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
   });
 });
