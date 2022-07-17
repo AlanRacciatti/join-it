@@ -11,10 +11,11 @@ describe("Crypto Dev Token", function () {
     cryptoDevsContract: CryptoDevs,
     cryptoDevTokenContract: CryptoDevToken,
     deployer: SignerWithAddress,
-    alice: SignerWithAddress;
+    alice: SignerWithAddress,
+    signers: SignerWithAddress[];
 
   beforeEach(async () => {
-    [deployer, alice] = await ethers.getSigners();
+    [deployer, alice, ...signers] = await ethers.getSigners();
 
     await deployments.fixture(["main"]);
 
@@ -90,7 +91,28 @@ describe("Crypto Dev Token", function () {
       ).to.be.revertedWith("InsufficientFunds");
     });
 
-    it("Should revert if mint exceed max total supply", async () => {});
+    it("Should revert if mint exceed max total supply", async () => {
+      const maxTotalSupply: number = 10000;
+      const tokensToBuyForSigner: number = maxTotalSupply / 10; // Fake signers doesn't have enough ether to buy all tokens at once
+      const tokenPriceInEth: number = 0.001;
+      const ethToSend = ethers.utils.parseEther(
+        (tokensToBuyForSigner * tokenPriceInEth).toString()
+      );
+
+      for (let i = 0; i < 10; i++) {
+        await cryptoDevTokenContract
+          .connect(signers[i])
+          .mint(tokensToBuyForSigner, {
+            value: ethToSend,
+          });
+      }
+
+      await expect(
+        cryptoDevTokenContract.connect(alice).mint(tokensToBuyForSigner, {
+          value: ethToSend,
+        })
+      ).to.be.revertedWith("TotalSupplyExceeded");
+    });
   });
 
   describe("Claiming", function () {
