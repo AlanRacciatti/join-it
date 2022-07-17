@@ -116,9 +116,47 @@ describe("Crypto Dev Token", function () {
   });
 
   describe("Claiming", function () {
-    it("Should allow NFT holders to claim free tokens");
-    it("Should revert if user does not owns at least 1 NFT");
-    it("Should revert if user has claimed all tokens");
+    it("Should allow NFT holders to claim free tokens", async () => {
+      const nftPrice: BigNumber = await cryptoDevsContract.tokenPrice();
+      const tokensPerNft: BigNumber =
+        await cryptoDevTokenContract.tokensPerNFT();
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await cryptoDevsContract.connect(alice).mint({
+        value: nftPrice,
+      });
+
+      await expect(() =>
+        cryptoDevTokenContract.connect(alice).claim()
+      ).to.changeTokenBalance(cryptoDevTokenContract, alice, tokensPerNft);
+    });
+
+    it("Should revert if user does not owns at least 1 NFT", async () => {
+      await expect(cryptoDevTokenContract.claim()).to.be.revertedWith(
+        "NotNftOwner"
+      );
+    });
+
+    it("Should revert if user has claimed all tokens", async () => {
+      const nftPrice: BigNumber = await cryptoDevsContract.tokenPrice();
+      const tokensPerNft: BigNumber =
+        await cryptoDevTokenContract.tokensPerNFT();
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await cryptoDevsContract.connect(alice).mint({
+        value: nftPrice,
+      });
+
+      await expect(() =>
+        cryptoDevTokenContract.connect(alice).claim()
+      ).to.changeTokenBalance(cryptoDevTokenContract, alice, tokensPerNft);
+
+      await expect(
+        cryptoDevTokenContract.connect(alice).claim()
+      ).to.be.revertedWith("AllTokensClaimed");
+    });
   });
 
   describe("Withdraw", function () {
