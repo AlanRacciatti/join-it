@@ -159,7 +159,7 @@ describe("Crypto Dev Token", function () {
     });
   });
 
-  describe.only("Withdraw", function () {
+  describe("Withdraw", function () {
     it("Should allow contract withdraw", async () => {
       const tokenPrice: BigNumber = await cryptoDevTokenContract.tokenPrice();
       const tokensToBuy: number = 10;
