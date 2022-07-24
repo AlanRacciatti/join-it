@@ -6,7 +6,7 @@ import { deployments, ethers } from "hardhat";
 import { getParsedBalance } from "./utils/CryptoDevs";
 import { CryptoDevsUtils } from "./utils/index";
 
-describe.only("Fake NFT Marketplace", function () {
+describe("Fake NFT Marketplace", function () {
   let fakeNftMarketplace: FakeNFTMarketplace,
     deployer: SignerWithAddress,
     alice: SignerWithAddress;
