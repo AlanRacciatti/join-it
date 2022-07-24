@@ -23,8 +23,8 @@ contract CryptoDevsDAO is Ownable {
     mapping(uint256 => Proposal) public proposals;
     uint256 public numProposals;
 
-    IFakeNFTMarketplace nftMarketplace;
-    ICryptoDevs cryptoDevsNFT;
+    IFakeNFTMarketplace private immutable nftMarketplace;
+    ICryptoDevs private immutable cryptoDevsNFT;
 
     modifier nftHolderOnly() {
         require(cryptoDevsNFT.balanceOf(msg.sender) > 0, "NOT_A_DAO_MEMBER");
