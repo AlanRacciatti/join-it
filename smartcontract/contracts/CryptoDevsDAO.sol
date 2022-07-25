@@ -7,6 +7,7 @@ import "./interfaces/IFakeNFTMarketplace.sol";
 
 error DeadlineExceeded();
 error NotDaoMember();
+error ProposalAlreadyExecuted();
 error DeadlineNotExceeded();
 error NftNotForSale();
 error AlreadyVoted();
@@ -50,6 +51,9 @@ contract CryptoDevsDAO is Ownable {
     modifier inactiveProposalOnly(uint256 proposalIndex) {
         if (proposals[proposalIndex].deadline > block.timestamp) {
             revert DeadlineNotExceeded();
+        }
+        if (proposals[proposalIndex].executed) {
+            revert ProposalAlreadyExecuted();
         }
         _;
     }
