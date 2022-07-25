@@ -5,6 +5,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ICryptoDevs.sol";
 import "./interfaces/IFakeNFTMarketplace.sol";
 
+error DeadlineExceeded();
+error NotDaoMember();
+error DeadlineNotExceeded();
+error NftNotForSale();
+error AlreadyVoted();
+error InsufficientFunds();
+
 contract CryptoDevsDAO is Ownable {
     struct Proposal {
         uint256 nftTokenId;
@@ -27,27 +34,23 @@ contract CryptoDevsDAO is Ownable {
     ICryptoDevs private immutable cryptoDevsNFT;
 
     modifier nftHolderOnly() {
-        require(cryptoDevsNFT.balanceOf(msg.sender) > 0, "NOT_A_DAO_MEMBER");
+        if (cryptoDevsNFT.balanceOf(msg.sender) <= 0) {
+            revert NotDaoMember();
+        }
         _;
     }
 
     modifier activeProposalOnly(uint256 proposalIndex) {
-        require(
-            proposals[proposalIndex].deadline > block.timestamp,
-            "DEADLINE_EXCEEDED"
-        );
+        if (proposals[proposalIndex].deadline <= block.timestamp) {
+            revert DeadlineExceeded();
+        }
         _;
     }
 
     modifier inactiveProposalOnly(uint256 proposalIndex) {
-        require(
-            proposals[proposalIndex].deadline <= block.timestamp,
-            "DEADLINE_NOT_EXCEEDED"
-        );
-        require(
-            proposals[proposalIndex].executed == false,
-            "PROPOSAL_ALREADY_EXECUTED"
-        );
+        if (proposals[proposalIndex].deadline > block.timestamp) {
+            revert DeadlineNotExceeded();
+        }
         _;
     }
 
@@ -65,7 +68,9 @@ contract CryptoDevsDAO is Ownable {
         nftHolderOnly
         returns (uint256)
     {
-        require(nftMarketplace.available(_nftTokenId), "NFT_NOT_FOR_SALE");
+        if (!nftMarketplace.available(_nftTokenId)) {
+            revert NftNotForSale();
+        }
         Proposal storage proposal = proposals[numProposals];
         proposal.nftTokenId = _nftTokenId;
         proposal.deadline = block.timestamp + 5 minutes;
@@ -93,7 +98,9 @@ contract CryptoDevsDAO is Ownable {
             }
         }
 
-        require(numVotes > 0, "ALREADY_VOTED");
+        if (numVotes <= 0) {
+            revert AlreadyVoted();
+        }
 
         if (vote == Vote.YAY) {
             proposal.yayVotes += numVotes;
@@ -111,7 +118,9 @@ contract CryptoDevsDAO is Ownable {
 
         if (proposal.yayVotes > proposal.nayVotes) {
             uint256 nftPrice = nftMarketplace.getPrice();
-            require(address(this).balance >= nftPrice, "NOT_ENOUGH_FUNDS");
+            if (address(this).balance < nftPrice) {
+                revert InsufficientFunds();
+            }
             nftMarketplace.purchase{value: nftPrice}(proposal.nftTokenId);
         }
         proposal.executed = true;
