@@ -20,3 +20,12 @@ export const startAndEndPresale = async (cryptoDevsContract: CryptoDevs) => {
   await cryptoDevsContract.startPresale();
   await ethers.provider.send("evm_increaseTime", [presaleTime]);
 };
+
+export const mintNft = async (
+  cryptoDevsContract: CryptoDevs,
+  signer: SignerWithAddress
+) => {
+  await cryptoDevsContract.connect(signer).mint({
+    value: ethers.utils.parseEther("0.01"),
+  });
+};

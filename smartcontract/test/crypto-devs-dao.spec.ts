@@ -1,11 +1,14 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { CryptoDevsDAO } from "../typechain";
+import { CryptoDevs, CryptoDevsDAO } from "../typechain";
 import { deployments, ethers } from "hardhat";
 import { getParsedBalance } from "./utils/CryptoDevs";
+import { CryptoDevsDaoUtils, CryptoDevsUtils } from "./utils";
+import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 
-describe.only("Crypto Devs DAO", function () {
-  let cryptoDevsDaoContract: CryptoDevsDAO,
+describe("Crypto Devs DAO", function () {
+  let cryptoDevsContract: CryptoDevs,
+    cryptoDevsDaoContract: CryptoDevsDAO,
     deployer: SignerWithAddress,
     alice: SignerWithAddress;
 
@@ -14,6 +17,7 @@ describe.only("Crypto Devs DAO", function () {
 
     await deployments.fixture(["main"]);
 
+    cryptoDevsContract = await ethers.getContract("CryptoDevs");
     cryptoDevsDaoContract = await ethers.getContract("CryptoDevsDAO");
   });
 
@@ -42,33 +46,65 @@ describe.only("Crypto Devs DAO", function () {
 
       expect(await getParsedBalance(cryptoDevsDaoContract)).to.equal("1.0");
     });
+  });
 
-    describe("Proposal creation", function () {
-      it("Should be able to create a proposal");
-      it("Should NOT allow non-nft-holders to create a proposal");
-      it("Should revert if token to buy is not available");
+  describe.only("Proposal creation", function () {
+    it("Should be able to create a proposal", async () => {
+      const tokenId: number = 3;
+      const proposalTokenIdIndex: number = 0;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      const proposal = await cryptoDevsDaoContract.proposals(proposalIndex);
+      expect(proposal[proposalTokenIdIndex]).to.equal(tokenId);
     });
 
-    describe("Proposal voting", function () {
-      it("Should allow to vote a proposal by his index");
-      it("Should NOT allow non-nft-holders to vote for a proposal");
-      it("Should NOT allow to vote for a proposal that is not active");
-      it("Should sum one vote by each nft");
-      it("Should revert if user already voted with all his nft");
-      it("Should allow to vote again if user has a new nft");
+    it("Should NOT allow non-nft-holders to create a proposal", async () => {
+      const tokenId: number = 3;
+
+      await expect(
+        cryptoDevsDaoContract.connect(alice).createProposal(tokenId)
+      ).to.be.revertedWith("NotDaoMember");
     });
 
-    describe("Proposal execution", function () {
-      it(
-        "Should allow to finish the proposal and purchase the nft if dao agreed"
+    it("Should revert if token to buy is not available", async () => {
+      const tokenId: number = 3;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await CryptoDevsDaoUtils.createAndExecuteProposal(
+        cryptoDevsContract,
+        cryptoDevsDaoContract,
+        alice,
+        tokenId
       );
-      it("Should NOT allow non-nft-holders to execute a proposal");
-      it("Should NOT allow to execute a proposal that is active");
-      it("Should revert execution if contract can't afford the NFT");
     });
+  });
 
-    describe("Withdraw", function () {
-      it("Should only allow owner to withdraw contract ETH");
-    });
+  describe("Proposal voting", function () {
+    it("Should allow to vote a proposal by his index");
+    it("Should NOT allow non-nft-holders to vote for a proposal");
+    it("Should NOT allow to vote for a proposal that is not active");
+    it("Should sum one vote by each nft");
+    it("Should revert if user already voted with all his nft");
+    it("Should allow to vote again if user has a new nft");
+  });
+
+  describe("Proposal execution", function () {
+    it(
+      "Should allow to finish the proposal and purchase the nft if dao agreed"
+    );
+    it("Should NOT allow non-nft-holders to execute a proposal");
+    it("Should NOT allow to execute a proposal that is active");
+    it("Should revert execution if contract can't afford the NFT");
+  });
+
+  describe("Withdraw", function () {
+    it("Should only allow owner to withdraw contract ETH");
   });
 });
