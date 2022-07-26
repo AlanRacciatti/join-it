@@ -12,6 +12,11 @@ describe("Crypto Devs DAO", function () {
     deployer: SignerWithAddress,
     alice: SignerWithAddress;
 
+  enum Votes {
+    yay = 0,
+    nay = 1,
+  }
+
   beforeEach(async () => {
     [deployer, alice] = await ethers.getSigners();
 
@@ -48,7 +53,7 @@ describe("Crypto Devs DAO", function () {
     });
   });
 
-  describe.only("Proposal creation", function () {
+  describe("Proposal creation", function () {
     it("Should be able to create a proposal", async () => {
       const tokenId: number = 3;
       const proposalTokenIdIndex: number = 0;
@@ -87,7 +92,22 @@ describe("Crypto Devs DAO", function () {
   });
 
   describe("Proposal voting", function () {
-    it("Should allow to vote a proposal by his index");
+    it("Should allow to vote a proposal by his index", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+      const yayVotesIndex: number = 2;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      const proposal = await cryptoDevsDaoContract.proposals(proposalIndex);
+      expect(proposal[yayVotesIndex]).to.equal(1);
+    });
     it("Should NOT allow non-nft-holders to vote for a proposal");
     it("Should NOT allow to vote for a proposal that is not active");
     it("Should sum one vote by each nft");
