@@ -10,7 +10,8 @@ describe("Crypto Devs DAO", function () {
   let cryptoDevsContract: CryptoDevs,
     cryptoDevsDaoContract: CryptoDevsDAO,
     deployer: SignerWithAddress,
-    alice: SignerWithAddress;
+    alice: SignerWithAddress,
+    bob: SignerWithAddress;
 
   enum Votes {
     yay = 0,
@@ -18,7 +19,7 @@ describe("Crypto Devs DAO", function () {
   }
 
   beforeEach(async () => {
-    [deployer, alice] = await ethers.getSigners();
+    [deployer, alice, bob] = await ethers.getSigners();
 
     await deployments.fixture(["main"]);
 
@@ -83,7 +84,6 @@ describe("Crypto Devs DAO", function () {
       await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
 
       await CryptoDevsDaoUtils.createAndExecuteProposal(
-        cryptoDevsContract,
         cryptoDevsDaoContract,
         alice,
         tokenId
@@ -91,7 +91,7 @@ describe("Crypto Devs DAO", function () {
     });
   });
 
-  describe("Proposal voting", function () {
+  describe.only("Proposal voting", function () {
     it("Should allow to vote a proposal by his index", async () => {
       const tokenId: number = 3;
       const proposalIndex: number = 0;
@@ -108,8 +108,40 @@ describe("Crypto Devs DAO", function () {
       const proposal = await cryptoDevsDaoContract.proposals(proposalIndex);
       expect(proposal[yayVotesIndex]).to.equal(1);
     });
-    it("Should NOT allow non-nft-holders to vote for a proposal");
-    it("Should NOT allow to vote for a proposal that is not active");
+
+    it("Should NOT allow non-nft-holders to vote for a proposal", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+      await expect(
+        cryptoDevsDaoContract
+          .connect(bob)
+          .voteOnProposal(proposalIndex, Votes.yay)
+      ).to.be.revertedWith("NotDaoMember");
+    });
+
+    it("Should NOT allow to vote for a proposal that is not active", async () => {
+      const tokenId: number = 3;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await CryptoDevsDaoUtils.createAndExecuteProposal(
+        cryptoDevsDaoContract,
+        alice,
+        tokenId
+      );
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, bob);
+
+      await expect(
+        cryptoDevsDaoContract.connect(bob).voteOnProposal(tokenId, Votes.yay)
+      ).to.be.revertedWith("DeadlineExceeded");
+    });
     it("Should sum one vote by each nft");
     it("Should revert if user already voted with all his nft");
     it("Should allow to vote again if user has a new nft");

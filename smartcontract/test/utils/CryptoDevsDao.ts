@@ -5,7 +5,6 @@ import { CryptoDevsUtils } from ".";
 import { CryptoDevs, CryptoDevsDAO } from "../../typechain";
 
 export const createAndExecuteProposal = async (
-  nftContract: CryptoDevs,
   daoContract: CryptoDevsDAO,
   signer: SignerWithAddress,
   tokenId: number
