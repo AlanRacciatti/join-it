@@ -142,9 +142,86 @@ describe("Crypto Devs DAO", function () {
         cryptoDevsDaoContract.connect(bob).voteOnProposal(tokenId, Votes.yay)
       ).to.be.revertedWith("DeadlineExceeded");
     });
-    it("Should sum one vote by each nft");
-    it("Should revert if user already voted with all his nft");
-    it("Should allow to vote again if user has a new nft");
+
+    it("Should sum one vote by each nft", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+      const aliceNfts: number = 3;
+      const bobNfts: number = 5;
+      const yayVotesIndex: number = 2;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice, aliceNfts);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, bob, bobNfts);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await cryptoDevsDaoContract
+        .connect(bob)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      const proposal = await cryptoDevsDaoContract.proposals(proposalIndex);
+
+      expect(proposal[yayVotesIndex]).to.equal(bobNfts + aliceNfts);
+    });
+
+    it("Should revert if user already voted with all his nft", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await expect(
+        cryptoDevsDaoContract
+          .connect(alice)
+          .voteOnProposal(proposalIndex, Votes.yay)
+      ).to.be.revertedWith("AlreadyVoted");
+    });
+
+    it("Should allow to vote again if user has a new nft", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+      const yayVotesIndex: number = 2;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      let proposal = await cryptoDevsDaoContract.proposals(proposalIndex);
+      expect(proposal[yayVotesIndex]).to.equal(1);
+
+      await expect(
+        cryptoDevsDaoContract
+          .connect(alice)
+          .voteOnProposal(proposalIndex, Votes.yay)
+      ).to.be.revertedWith("AlreadyVoted");
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      proposal = await cryptoDevsDaoContract.proposals(proposalIndex);
+      expect(proposal[yayVotesIndex]).to.equal(2);
+    });
   });
 
   describe("Proposal execution", function () {

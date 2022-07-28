@@ -23,9 +23,14 @@ export const startAndEndPresale = async (cryptoDevsContract: CryptoDevs) => {
 
 export const mintNft = async (
   cryptoDevsContract: CryptoDevs,
-  signer: SignerWithAddress
+  signer: SignerWithAddress,
+  amount?: number
 ) => {
-  await cryptoDevsContract.connect(signer).mint({
-    value: ethers.utils.parseEther("0.01"),
-  });
+  amount = amount ?? 1;
+
+  for (let i = 0; i < amount; i++) {
+    await cryptoDevsContract.connect(signer).mint({
+      value: ethers.utils.parseEther("0.01"),
+    });
+  }
 };
