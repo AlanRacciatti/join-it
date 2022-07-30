@@ -1,14 +1,14 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { CryptoDevs, CryptoDevsDAO } from "../typechain";
+import { CryptoDevs, CryptoDevsDAO, FakeNFTMarketplace } from "../typechain";
 import { deployments, ethers } from "hardhat";
 import { getParsedBalance } from "./utils/CryptoDevs";
 import { CryptoDevsDaoUtils, CryptoDevsUtils } from "./utils";
-import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 
 describe("Crypto Devs DAO", function () {
   let cryptoDevsContract: CryptoDevs,
     cryptoDevsDaoContract: CryptoDevsDAO,
+    nftMarketplaceContract: FakeNFTMarketplace,
     deployer: SignerWithAddress,
     alice: SignerWithAddress,
     bob: SignerWithAddress;
@@ -25,6 +25,7 @@ describe("Crypto Devs DAO", function () {
 
     cryptoDevsContract = await ethers.getContract("CryptoDevs");
     cryptoDevsDaoContract = await ethers.getContract("CryptoDevsDAO");
+    nftMarketplaceContract = await ethers.getContract("FakeNFTMarketplace");
   });
 
   describe("Special functions", function () {
@@ -225,15 +226,126 @@ describe("Crypto Devs DAO", function () {
   });
 
   describe("Proposal execution", function () {
-    it(
-      "Should allow to finish the proposal and purchase the nft if dao agreed"
-    );
-    it("Should NOT allow non-nft-holders to execute a proposal");
-    it("Should NOT allow to execute a proposal that is active");
-    it("Should revert execution if contract can't afford the NFT");
+    it("Should allow to finish the proposal and purchase the nft if dao agreed", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, bob);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await cryptoDevsDaoContract
+        .connect(bob)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await CryptoDevsDaoUtils.advanceDeadlineTime();
+      await CryptoDevsDaoUtils.fundWithNftPrice(alice, cryptoDevsDaoContract);
+
+      await cryptoDevsDaoContract.connect(alice).executeProposal(proposalIndex);
+      expect(await nftMarketplaceContract.available(tokenId)).to.equal(false);
+    });
+
+    it("Should NOT allow non-nft-holders to execute a proposal", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, bob);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await cryptoDevsDaoContract
+        .connect(bob)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await CryptoDevsDaoUtils.advanceDeadlineTime();
+      await CryptoDevsDaoUtils.fundWithNftPrice(alice, cryptoDevsDaoContract);
+
+      await expect(
+        cryptoDevsDaoContract.executeProposal(proposalIndex)
+      ).to.be.revertedWith("NotDaoMember");
+    });
+
+    it("Should NOT allow to execute a proposal that is active", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, bob);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await cryptoDevsDaoContract
+        .connect(bob)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await CryptoDevsDaoUtils.fundWithNftPrice(alice, cryptoDevsDaoContract);
+
+      await expect(
+        cryptoDevsDaoContract.connect(alice).executeProposal(proposalIndex)
+      ).to.be.revertedWith("DeadlineNotExceeded");
+    });
+
+    it("Should revert execution if contract can't afford the NFT", async () => {
+      const tokenId: number = 3;
+      const proposalIndex: number = 0;
+
+      await CryptoDevsUtils.startAndEndPresale(cryptoDevsContract);
+
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, alice);
+      await CryptoDevsUtils.mintNft(cryptoDevsContract, bob);
+
+      await cryptoDevsDaoContract.connect(alice).createProposal(tokenId);
+
+      await cryptoDevsDaoContract
+        .connect(alice)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await cryptoDevsDaoContract
+        .connect(bob)
+        .voteOnProposal(proposalIndex, Votes.yay);
+
+      await CryptoDevsDaoUtils.advanceDeadlineTime();
+
+      await expect(
+        cryptoDevsDaoContract.connect(alice).executeProposal(proposalIndex)
+      ).to.be.revertedWith("InsufficientFunds");
+    });
   });
 
   describe("Withdraw", function () {
-    it("Should only allow owner to withdraw contract ETH");
+    it("Should only allow owner to withdraw contract ETH", async () => {
+      await alice.sendTransaction({
+        to: cryptoDevsDaoContract.address,
+        value: ethers.utils.parseEther("1"),
+      });
+
+      await expect(
+        cryptoDevsDaoContract.connect(alice).withdrawEther()
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+
+      await expect(
+        await cryptoDevsDaoContract.connect(deployer).withdrawEther()
+      ).to.changeEtherBalance(deployer, ethers.utils.parseEther("1"));
+    });
   });
 });
