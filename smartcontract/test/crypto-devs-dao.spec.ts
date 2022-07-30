@@ -91,7 +91,7 @@ describe("Crypto Devs DAO", function () {
     });
   });
 
-  describe.only("Proposal voting", function () {
+  describe("Proposal voting", function () {
     it("Should allow to vote a proposal by his index", async () => {
       const tokenId: number = 3;
       const proposalIndex: number = 0;
